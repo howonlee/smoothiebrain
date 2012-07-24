@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+    <script type="text/javascript" src="./smoothiebrain_files/smoothie.js"></script>
+    <script type="text/javascript" src="./smoothiebrain_files/brain.js">
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script type="text/javascript">
+      var chart = new SmoothieChart({ grid: {strokeStyle:'rgb(200,200,200)', fillStyle:'rgb(60,60,60)', lineWidth:1}, labels:{ fillStyle:'rgb(20,20,20)'}});
+      var net = new brain.NeuralNetwork({hiddenLayers: [4], learningRate: 0.2});
+      var istrained = false;
+      // Randomly add a data point every 500ms
+      var random = new TimeSeries();
+      var trained = new TimeSeries();
+      setInterval(function() {
+        random.append(new Date().getTime(), Math.random());
+        if (istrained) {
+            var inputData = random.data;
+            var lengthData = random.data.length;
+            trained.append(new Date().getTime(), net.run([inputData[lengthData-3][1], inputData[lengthData-2][1], inputData[lengthData-1][1]])[0]);
+        } else {
+            trained.append(new Date().getTime(), 0);
+        }
+      }, 500);
+     
+      //wrapper for brain.js's spiffy stuff
+      function trainANN(series){
+        //create the training set
+        //there had better be more than 4 points...
+        var trainingdata = [];
+        for (var i = 3; i < series.length; i++){
+           var tempin =  [series[i-3][1], series[i-2][1], series[i-1][1]];
+           var tempout = [series[i][1]];
+           var pattern = {
+               input : tempin,
+               output : tempout
+           };
+           trainingdata.push(pattern);
+        }
+        console.log(trainingdata);
+        net.train(trainingdata);
+        istrained = true;
+        console.log(net.toFunction());
+        
+      }
+       
+      function createTimeline() {
+        chart.addTimeSeries(random, { strokeStyle: 'rgba(0, 255, 0, 1)', fillStyle: 'rgba(0, 255, 0, 0.2)', lineWidth: 4 });
+        chart.addTimeSeries(trained, { strokeStyle: 'rgba(255, 0, 0, 1)', fillStyle: 'rgba(255, 0, 0, 0.2)', lineWidth : 4});
+        chart.streamTo(document.getElementById("chart"), 500);
+      }
+    </script>
+  <style type="text/css"></style></head>
+  <body onload="createTimeline()" style="background-color:#333333">
+
+    <center>
+        <canvas id="chart" width="900" height="500"></canvas>
+    </center>
+    <center>
+        <button onclick="trainANN(random.data)" id="button">Learn!</button>
+    </center>
+
+  
+
+</body></html>
